@@ -1,118 +1,146 @@
-// -----------------------------------------------------------------------------
-// 1. SETTINGS & CONFIGURATION
-// -----------------------------------------------------------------------------
-const GEMINI_API_KEY = 'AIzaSyDP9CC8fVq-EAjvkD-2neGfXdGyMmVfEWk';
+// src/background.ts
 
+// The hardcoded API key is GONE. We will fetch it from storage.
 
 // -----------------------------------------------------------------------------
-// 2. CONTEXT MENU SETUP
-// This function runs once when the extension is installed.
+// 1. CONTEXT MENU SETUP (NOW DYNAMIC)
 // -----------------------------------------------------------------------------
+async function setupContextMenu() {
+  // Clear all existing context menus to rebuild them from scratch
+  chrome.contextMenus.removeAll(async () => {
+    // Get the user's saved category settings from storage
+    const { categorySettings } = await chrome.storage.sync.get('categorySettings');
+    const settings = categorySettings || {}; // Default to an empty object if no settings are stored
 
-function setupContextMenu(): void {
-  // Main Parent Menu
-  chrome.contextMenus.create({
-    id: "main",
-    title: "Marv's AI Web-Tools",
-    contexts: ["selection"]
+    // Create the main parent menu item - this is always visible
+    chrome.contextMenus.create({
+      id: "main",
+      title: "Marv's AI Web-Tools",
+      contexts: ["selection"]
+    });
+
+    // --- Dynamically create categories based on user's settings ---
+    // If a setting for a category is undefined (first run), we default to 'true' (visible).
+    // It will only be hidden if the user explicitly sets it to 'false'.
+
+    if (settings['cat-marketing'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-marketing', title: 'Marketing & SEO', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'marketing-extractKeywords', title: 'Extract SEO Keywords', parentId: 'cat-marketing', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'marketing-generateAdCopy', title: 'Generate Ad Copy (PPC)', parentId: 'cat-marketing', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'marketing-defineAudience', title: 'Define Target Audience', parentId: 'cat-marketing', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'marketing-suggestCTAs', title: 'Suggest Calls to Action', parentId: 'cat-marketing', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'marketing-createEmailSubjects', title: 'Create Email Subject Lines', parentId: 'cat-marketing', contexts: ['selection'] });
+    }
+
+    if (settings['cat-social'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-social', title: 'Social Media Management', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'social-createPost', title: 'Create Post/Thread from Text', parentId: 'cat-social', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'social-generateHashtags', title: 'Generate Relevant Hashtags', parentId: 'cat-social', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'social-draftReply', title: 'Draft a Reply (Positive/Negative)', parentId: 'cat-social', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'social-findPullQuote', title: 'Find a "Pull Quote"', parentId: 'cat-social', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'social-suggestContentIdeas', title: 'Suggest 3 Content Ideas', parentId: 'cat-social', contexts: ['selection'] });
+    }
+
+    if (settings['cat-ecommerce'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-ecommerce', title: 'E-commerce & Shopping', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'ecommerce-summarizeReviews', title: 'Summarize Product Reviews', parentId: 'cat-ecommerce', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'ecommerce-compareProducts', title: 'Compare Two Products', parentId: 'cat-ecommerce', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'ecommerce-extractSpecs', title: 'Extract Key Specifications', parentId: 'cat-ecommerce', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'ecommerce-findDealbreakers', title: 'Identify Potential Deal-Breakers', parentId: 'cat-ecommerce', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'ecommerce-draftSellerQuestion', title: 'Draft a Question for the Seller', parentId: 'cat-ecommerce', contexts: ['selection'] });
+    }
+
+    if (settings['cat-productivity'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-productivity', title: 'Productivity & Project Management', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'productivity-extractActionItems', title: 'Extract Action Items', parentId: 'cat-productivity', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'productivity-draftFollowUp', title: 'Draft a Follow-Up Email', parentId: 'cat-productivity', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'productivity-prioritizeTasks', title: 'Prioritize a Task List', parentId: 'cat-productivity', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'productivity-estimateDuration', title: 'Estimate Task Duration', parentId: 'cat-productivity', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'productivity-formatAsUpdate', title: 'Reformat to a Project Update', parentId: 'cat-productivity', contexts: ['selection'] });
+    }
+
+    if (settings['cat-learning'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-learning', title: 'Learning & Education', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'learning-createFlashcards', title: 'Create Flashcards', parentId: 'cat-learning', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'learning-generateQuiz', title: 'Generate a Quiz', parentId: 'cat-learning', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'learning-identifyCoreConcepts', title: 'Identify Core Concepts', parentId: 'cat-learning', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'learning-findRelatedTopics', title: 'Find Related Topics for Deeper Study', parentId: 'cat-learning', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'learning-simplifyJargon', title: 'Simplify Technical Jargon', parentId: 'cat-learning', contexts: ['selection'] });
+    }
+
+    if (settings['cat-travel'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-travel', title: 'Travel Planning', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'travel-summarizeHotel', title: 'Summarize Hotel/Airbnb Description', parentId: 'cat-travel', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'travel-createItinerary', title: 'Create a Mini-Itinerary', parentId: 'cat-travel', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'travel-extractDetails', title: 'Extract Practical Details', parentId: 'cat-travel', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'travel-getCulturalTips', title: 'Get Cultural "Do\'s and Don\'ts"', parentId: 'cat-travel', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'travel-checkForRedFlags', title: 'Check for Red Flags in Reviews', parentId: 'cat-travel', contexts: ['selection'] });
+    }
+
+    if (settings['cat-developer'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-developer', title: 'Developer Tools', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'developer-generateDocs', title: 'Generate Code Documentation', parentId: 'cat-developer', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'developer-refactorCode', title: 'Refactor & Improve Code', parentId: 'cat-developer', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'developer-translateCode', title: 'Translate Between Languages', parentId: 'cat-developer', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'developer-writeUnitTests', title: 'Write Unit Tests', parentId: 'cat-developer', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'developer-generateRegex', title: 'Generate Regex from Description', parentId: 'cat-developer', contexts: ['selection'] });
+    }
+    
+    if (settings['cat-creative'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-creative', title: 'Creative & Brainstorming', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'creative-generateAnalogies', title: 'Generate Analogies & Metaphors', parentId: 'cat-creative', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'creative-suggestVisuals', title: 'Suggest a Visual Theme', parentId: 'cat-creative', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'creative-brainstormSlogans', title: 'Brainstorm Slogans/Taglines', parentId: 'cat-creative', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'creative-expandIdea', title: 'Expand on an Idea', parentId: 'cat-creative', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'creative-mindMap', title: 'Mind Map Core Concepts', parentId: 'cat-creative', contexts: ['selection'] });
+    }
+
+    if (settings['cat-career'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-career', title: 'Career & Professional Development', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'career-improveBio', title: 'Improve LinkedIn Bio/Summary', parentId: 'cat-career', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'career-draftNetworkingMessage', title: 'Draft a Networking Message', parentId: 'cat-career', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'career-formatAccomplishments', title: 'Format Accomplishments for Review', parentId: 'cat-career', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'career-generateSTAR', title: 'Generate "STAR" Interview Story', parentId: 'cat-career', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'career-extractAdvice', title: 'Extract Actionable Career Advice', parentId: 'cat-career', contexts: ['selection'] });
+    }
+
+    if (settings['cat-communication'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-communication', title: 'Communication & Interpersonal', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'communication-makePersuasive', title: 'Make Text More Persuasive', parentId: 'cat-communication', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'communication-makeDiplomatic', title: 'Make Text More Diplomatic', parentId: 'cat-communication', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'communication-analyzeSentiment', title: 'Analyze Text Sentiment', parentId: 'cat-communication', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'communication-findQuestion', title: 'Identify the Underlying Question', parentId: 'cat-communication', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'communication-draftPoliteNo', title: 'Draft a Polite "No"', parentId: 'cat-communication', contexts: ['selection'] });
+    }
+
+    if (settings['cat-cooking'] !== false) {
+      chrome.contextMenus.create({ id: 'cat-cooking', title: 'Cooking & Recipes', parentId: 'main', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'cooking-adjustServing', title: 'Adjust Serving Size', parentId: 'cat-cooking', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'cooking-generateShoppingList', title: 'Generate a Shopping List', parentId: 'cat-cooking', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'cooking-suggestSubstitutions', title: 'Suggest Ingredient Substitutions', parentId: 'cat-cooking', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'cooking-estimateTime', title: 'Estimate Total Time', parentId: 'cat-cooking', contexts: ['selection'] });
+      chrome.contextMenus.create({ id: 'cooking-simplifyInstructions', title: 'Simplify Instructions', parentId: 'cat-cooking', contexts: ['selection'] });
+    }
   });
-
-  // --- Category: Marketing & SEO ---
-  chrome.contextMenus.create({ id: 'cat-marketing', title: 'Marketing & SEO', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'marketing-extractKeywords', title: 'Extract SEO Keywords', parentId: 'cat-marketing', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'marketing-generateAdCopy', title: 'Generate Ad Copy (PPC)', parentId: 'cat-marketing', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'marketing-defineAudience', title: 'Define Target Audience', parentId: 'cat-marketing', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'marketing-suggestCTAs', title: 'Suggest Calls to Action', parentId: 'cat-marketing', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'marketing-createEmailSubjects', title: 'Create Email Subject Lines', parentId: 'cat-marketing', contexts: ['selection'] });
-
-  // --- Category: Social Media Management ---
-  chrome.contextMenus.create({ id: 'cat-social', title: 'Social Media Management', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'social-createPost', title: 'Create Post/Thread from Text', parentId: 'cat-social', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'social-generateHashtags', title: 'Generate Relevant Hashtags', parentId: 'cat-social', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'social-draftReply', title: 'Draft a Reply (Positive/Negative)', parentId: 'cat-social', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'social-findPullQuote', title: 'Find a "Pull Quote"', parentId: 'cat-social', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'social-suggestContentIdeas', title: 'Suggest 3 Content Ideas', parentId: 'cat-social', contexts: ['selection'] });
-
-  // --- Category: E-commerce & Shopping ---
-  chrome.contextMenus.create({ id: 'cat-ecommerce', title: 'E-commerce & Shopping', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'ecommerce-summarizeReviews', title: 'Summarize Product Reviews', parentId: 'cat-ecommerce', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'ecommerce-compareProducts', title: 'Compare Two Products', parentId: 'cat-ecommerce', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'ecommerce-extractSpecs', title: 'Extract Key Specifications', parentId: 'cat-ecommerce', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'ecommerce-findDealbreakers', title: 'Identify Potential Deal-Breakers', parentId: 'cat-ecommerce', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'ecommerce-draftSellerQuestion', title: 'Draft a Question for the Seller', parentId: 'cat-ecommerce', contexts: ['selection'] });
-
-  // --- Category: Productivity & Project Management ---
-  chrome.contextMenus.create({ id: 'cat-productivity', title: 'Productivity & Project Management', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'productivity-extractActionItems', title: 'Extract Action Items', parentId: 'cat-productivity', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'productivity-draftFollowUp', title: 'Draft a Follow-Up Email', parentId: 'cat-productivity', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'productivity-prioritizeTasks', title: 'Prioritize a Task List', parentId: 'cat-productivity', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'productivity-estimateDuration', title: 'Estimate Task Duration', parentId: 'cat-productivity', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'productivity-formatAsUpdate', title: 'Reformat to a Project Update', parentId: 'cat-productivity', contexts: ['selection'] });
-
-  // --- Category: Learning & Education ---
-  chrome.contextMenus.create({ id: 'cat-learning', title: 'Learning & Education', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'learning-createFlashcards', title: 'Create Flashcards', parentId: 'cat-learning', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'learning-generateQuiz', title: 'Generate a Quiz', parentId: 'cat-learning', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'learning-identifyCoreConcepts', title: 'Identify Core Concepts', parentId: 'cat-learning', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'learning-findRelatedTopics', title: 'Find Related Topics for Deeper Study', parentId: 'cat-learning', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'learning-simplifyJargon', title: 'Simplify Technical Jargon', parentId: 'cat-learning', contexts: ['selection'] });
-
-  // --- Category: Travel Planning ---
-  chrome.contextMenus.create({ id: 'cat-travel', title: 'Travel Planning', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'travel-summarizeHotel', title: 'Summarize Hotel/Airbnb Description', parentId: 'cat-travel', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'travel-createItinerary', title: 'Create a Mini-Itinerary', parentId: 'cat-travel', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'travel-extractDetails', title: 'Extract Practical Details', parentId: 'cat-travel', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'travel-getCulturalTips', title: 'Get Cultural "Do\'s and Don\'ts"', parentId: 'cat-travel', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'travel-checkForRedFlags', title: 'Check for Red Flags in Reviews', parentId: 'cat-travel', contexts: ['selection'] });
-  
-  // --- Category: Developer Tools ---
-  chrome.contextMenus.create({ id: 'cat-developer', title: 'Developer Tools', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'developer-generateDocs', title: 'Generate Code Documentation', parentId: 'cat-developer', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'developer-refactorCode', title: 'Refactor & Improve Code', parentId: 'cat-developer', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'developer-translateCode', title: 'Translate Between Languages', parentId: 'cat-developer', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'developer-writeUnitTests', title: 'Write Unit Tests', parentId: 'cat-developer', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'developer-generateRegex', title: 'Generate Regex from Description', parentId: 'cat-developer', contexts: ['selection'] });
-
-  // --- Category: Creative & Brainstorming ---
-  chrome.contextMenus.create({ id: 'cat-creative', title: 'Creative & Brainstorming', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'creative-generateAnalogies', title: 'Generate Analogies & Metaphors', parentId: 'cat-creative', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'creative-suggestVisuals', title: 'Suggest a Visual Theme', parentId: 'cat-creative', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'creative-brainstormSlogans', title: 'Brainstorm Slogans/Taglines', parentId: 'cat-creative', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'creative-expandIdea', title: 'Expand on an Idea', parentId: 'cat-creative', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'creative-mindMap', title: 'Mind Map Core Concepts', parentId: 'cat-creative', contexts: ['selection'] });
-
-  // --- Category: Career & Professional Development ---
-  chrome.contextMenus.create({ id: 'cat-career', title: 'Career & Professional Development', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'career-improveBio', title: 'Improve LinkedIn Bio/Summary', parentId: 'cat-career', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'career-draftNetworkingMessage', title: 'Draft a Networking Message', parentId: 'cat-career', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'career-formatAccomplishments', title: 'Format Accomplishments for Review', parentId: 'cat-career', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'career-generateSTAR', title: 'Generate "STAR" Interview Story', parentId: 'cat-career', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'career-extractAdvice', title: 'Extract Actionable Career Advice', parentId: 'cat-career', contexts: ['selection'] });
-
-  // --- Category: Communication & Interpersonal ---
-  chrome.contextMenus.create({ id: 'cat-communication', title: 'Communication & Interpersonal', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'communication-makePersuasive', title: 'Make Text More Persuasive', parentId: 'cat-communication', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'communication-makeDiplomatic', title: 'Make Text More Diplomatic', parentId: 'cat-communication', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'communication-analyzeSentiment', title: 'Analyze Text Sentiment', parentId: 'cat-communication', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'communication-findQuestion', title: 'Identify the Underlying Question', parentId: 'cat-communication', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'communication-draftPoliteNo', title: 'Draft a Polite "No"', parentId: 'cat-communication', contexts: ['selection'] });
-
-  // --- Category: Cooking & Recipes ---
-  chrome.contextMenus.create({ id: 'cat-cooking', title: 'Cooking & Recipes', parentId: 'main', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'cooking-adjustServing', title: 'Adjust Serving Size', parentId: 'cat-cooking', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'cooking-generateShoppingList', title: 'Generate a Shopping List', parentId: 'cat-cooking', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'cooking-suggestSubstitutions', title: 'Suggest Ingredient Substitutions', parentId: 'cat-cooking', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'cooking-estimateTime', title: 'Estimate Total Time', parentId: 'cat-cooking', contexts: ['selection'] });
-  chrome.contextMenus.create({ id: 'cooking-simplifyInstructions', title: 'Simplify Instructions', parentId: 'cat-cooking', contexts: ['selection'] });
 }
 
 
 // -----------------------------------------------------------------------------
-// 3. EVENT LISTENERS & API CALL LOGIC
+// 2. EVENT LISTENERS & API CALL LOGIC
 // -----------------------------------------------------------------------------
 
-// Run the setup function when the extension is first installed.
+// Run setup when the extension is first installed OR when the browser starts
 chrome.runtime.onInstalled.addListener(setupContextMenu);
+chrome.runtime.onStartup.addListener(setupContextMenu);
+
+// Listen for changes in storage (i.e., user saves new options)
+// and rebuild the menu instantly.
+chrome.storage.onChanged.addListener((changes, namespace) => {
+  if (namespace === 'sync' && (changes.apiKey || changes.categorySettings)) {
+    console.log("Settings changed, rebuilding context menu.");
+    setupContextMenu();
+  }
+});
 
 // Listens for a click on any of our context menu items.
 chrome.contextMenus.onClicked.addListener((info, tab) => {
@@ -120,19 +148,44 @@ chrome.contextMenus.onClicked.addListener((info, tab) => {
     console.error("Tab information is missing.");
     return;
   }
-  // Check if the clicked item ID exists as a key in our prompts object.
-  // This is the magic that makes the system scalable.
+  
   if (info.menuItemId in prompts) {
     const prompt = promptBuilder(info.menuItemId as keyof typeof prompts, info.selectionText || "");
     callGeminiAPI(prompt, tab.id);
   }
 });
 
+
+
 // Main function to call the Gemini API
 async function callGeminiAPI(prompt: string, tabId: number): Promise<void> {
-  // NOTE: You've used gemini-2.5-flash which is not a valid model name. 
-  // The correct model is 'gemini-1.5-flash'. I've updated it.
-  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${GEMINI_API_KEY}`;
+  // 1. Get the API key from storage
+  const { apiKey } = await chrome.storage.sync.get('apiKey');
+  if (!apiKey) {
+    chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: () => alert("Gemini API key not found. Please set it in the extension's options page."),
+    });
+    return;
+  }
+
+  // 2. Inject the UI scripts and show the loading state
+  try {
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['ai-response-ui.js'],
+    });
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: () => { window.aiResponseUI.show(); },
+    });
+  } catch (err) {
+    console.error("Failed to inject UI script:", err);
+    return;
+  }
+
+  // 3. Proceed with the API call
+  const url = `https://generativelanguage.googleapis.com/v1beta/models/gemini-1.5-flash:generateContent?key=${apiKey}`;
 
   try {
     const response = await fetch(url, {
@@ -146,37 +199,51 @@ async function callGeminiAPI(prompt: string, tabId: number): Promise<void> {
     if (!response.ok) {
       const errorBody = await response.json();
       console.error('API call failed:', response.status, errorBody);
-      throw new Error(`API call failed: ${errorBody.error.message}`);
+      throw new Error(`API Error: ${errorBody.error.message}`);
     }
 
     const data = await response.json();
+    let resultText: string;
 
     if (data.candidates && data.candidates[0]) {
-      const resultText = data.candidates[0].content.parts[0].text;
-      chrome.scripting.executeScript({
-        target: { tabId: tabId },
-        func: (text) => alert(text),
-        args: [resultText]
-      });
+      resultText = data.candidates[0].content.parts[0].text;
     } else {
-      // Handle cases where the API returns a 200 OK but with no candidates
-      // (e.g., due to safety settings blocking the prompt or response).
       console.error("API response was successful but contained no candidates:", data);
-      throw new Error("The AI returned an empty response, possibly due to safety filters.");
+      resultText = "The AI returned an empty response, possibly due to safety filters.";
     }
+
+    // 4. Update the UI with the final result (as HTML)
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      files: ['marked.min.js'], // Inject the markdown parser
+    });
+    
+    await chrome.scripting.executeScript({
+      target: { tabId: tabId },
+      func: (content) => {
+        // Use the marked library to convert markdown to HTML
+        const htmlContent = window.marked.parse(content);
+        window.aiResponseUI.update(htmlContent);
+      },
+      args: [resultText],
+    });
 
   } catch (error: any) {
     console.error('Error in callGeminiAPI function:', error);
-    chrome.scripting.executeScript({
+    // 5. Update the UI with the error message
+    await chrome.scripting.executeScript({
       target: { tabId: tabId },
-      func: (errorMsg) => alert(`An error occurred: ${errorMsg}`),
-      args: [error.message]
+      func: (errorMsg) => {
+         window.aiResponseUI.update(`<p style="color: red;"><strong>Error:</strong> ${errorMsg}</p>`);
+      },
+      args: [error.message],
     });
   }
 }
 
+
 // -----------------------------------------------------------------------------
-// 4. PROMPT ENGINEERING LOGIC
+// 3. PROMPT ENGINEERING LOGIC
 // -----------------------------------------------------------------------------
 
 // Simple builder to inject the selected text into the correct prompt template.

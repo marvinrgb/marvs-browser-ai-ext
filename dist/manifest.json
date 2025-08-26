@@ -5,12 +5,23 @@
   "description": "Uses AI to perform tasks on selected web text.",
   "permissions": [
     "contextMenus",
-    "scripting"
+    "scripting",
+    "storage"
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": [
+        "ai-response-ui.js",
+        "marked.min.js"
+      ],
+      "matches": ["<all_urls>"]
+    }
   ],
   "host_permissions": ["<all_urls>"],
   "background": {
     "service_worker": "background.js"
   },
+  "options_page": "options.html",
   "icons": {
     "16": "images/icon16.png",
     "48": "images/icon48.png",
